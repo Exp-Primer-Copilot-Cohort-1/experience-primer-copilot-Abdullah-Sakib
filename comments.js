@@ -1,30 +1,26 @@
+// Create web server
 const express = require('express');
+
+// Create an express application
 const app = express();
-const port = 3000;
-const bodyParser = require('body-parser');
 
-// create a route
-// app.get('/', (req, res) => {
-//     res.send('Hello World!');
-// });
+// Set the view engine to ejs
+app.set('view engine', 'ejs');
 
-// create a route
-app.get('/comments', (req, res) => {
-    res.json({ comments: [
-        {username: 'Todd', comment: 'lol'},
-        {username: 'Skyler', comment: 'rofl'},
-        {username: 'Sk8rBoi', comment: 'omg'}
-    ]});
+// Use the express.static middleware to serve static files
+app.use(express.static('public'));
+
+// GET /comments
+app.get('/comments', function (req, res) {
+    res.render('comments');
 });
 
-app.use(bodyParser.json());
-
-app.post('/comments', (req, res) => {
-    console.log(req.body);
-    res.json({ status: 'ok' });
+// GET /comments
+app.get('/comments', function (req, res) {
+    res.render('comments');
 });
 
-// listen to the server
-app.listen(port, () => {
-    console.log(`Example app listening at http://localhost:${port}`);
+// Start the server
+app.listen(3000, function () {
+    console.log('Server is listening on port 3000');
 });
