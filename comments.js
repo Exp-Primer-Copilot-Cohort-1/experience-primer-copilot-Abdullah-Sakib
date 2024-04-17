@@ -1,47 +1,70 @@
 // create web server
-// to run the server, type in the terminal: node comments.js
-// to test the server, type in the browser: http://localhost:3000/comments
-
-var http = require('http');
+var express = require('express');
+var app = express();
+var bodyParser = require('body-parser');
 var fs = require('fs');
-var url = require('url');
-var ROOT_DIR = "html/";
+var path = require('path');
 
-http.createServer(function (req, res) {
-    var urlObj = url.parse(req.url, true, false);
-    console.log("URL path: " + urlObj.pathname);
-    console.log("URL search: " + urlObj.search);
-    console.log("URL query: " + urlObj.query["q"]);
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: false}));
 
-    if (urlObj.pathname.indexOf("comment") != -1) {
-        console.log("comment route");
-        if (req.method === "POST") {
-            console.log("POST comment route");
-            var jsonData = "";
-            req.on('data', function (chunk) {
-                jsonData += chunk;
-            });
-            req.on('end', function () {
-                var reqObj = JSON.parse(jsonData);
-                console.log(reqObj);
-                console.log("Name: " + reqObj.Name);
-                console.log("Comment: " + reqObj.Comment);
-                // Now put it into the database
-                res.writeHead(200);
-                res.end("");
-            });
+// to get all comments
+app.get('/comments', function(req, res) {
+    res.setHeader('Content-Type', 'application/json');
+    fs.readFile('comments.json', 'utf8', function(err, data) {
+        if (err) {
+            console.log(err);
+            res.status(500).json({error: 'Something went wrong'});
+            return;
         }
-    } else {
-        fs.readFile(ROOT_DIR + urlObj.pathname, function (err, data) {
+        res.send(data);
+    });
+});
+
+// to add a new comment
+app.post('/comments', function(req, res) {
+    fs.readFile('comments.json', 'utf8', function(err, data) {
+        if (err) {
+            console.log(err);
+            res.status(500).json({error: 'Something went wrong'});
+            return;
+        }
+        var comments = JSON.parse(data);
+        comments.push(req.body);
+        fs.writeFile('comments.json', JSON.stringify(comments), function(err) {
             if (err) {
-                res.writeHead(404);
-                res.end(JSON.stringify(err));
+                console.log(err);
+                res.status(500).json({error: 'Something went wrong'});
                 return;
             }
-            res.writeHead(200);
-            res.end(data);
+            res.status(201).json({message: 'Comment added'});
         });
-    }
-}).listen(3000);
+    });
+});
 
-console.log("Server running at http://localhost:3000/");
+// to delete a comment
+app.delete('/comments/:id', function(req, res) {
+    fs.readFile('comments.json', 'utf8', function(err, data) {
+        if (err) {
+            console.log(err);
+            res.status(500).json({error: 'Something went wrong'});
+            return;
+        }
+        var comments = JSON.parse(data);
+        var filteredComments = comments.filter(function(comment) {
+            return comment.id !== req.params.id;
+        });
+        fs.writeFile('comments.json', JSON.stringify(filteredComments), function(err) {
+            if (err) {
+                console.log(err);
+                res.status(500).json({error: 'Something went wrong'});
+                return;
+            }
+            res.status(200).json({message: 'Comment deleted'});
+        });
+    });
+});
+
+app.listen(3000, function() {
+    console.log('Server running on port 3000');
+});
